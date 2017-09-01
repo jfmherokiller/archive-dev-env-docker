@@ -18,15 +18,17 @@ RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
 	libssl-dev \
 	libgnutls-dev \
 	zlib1g-dev \
-	npm \
 	libyaml-0-2 \
 	libcurl4-openssl-dev \
 	acpid \
     sudo
 
-#update ssh port and npm
-RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
-npm install -g npm
+#update ssh port
+RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config
+#install node
+RUN curl -sL https://deb.nodesource.com/setup_8.x -o /tmp/nodeinstall && \
+sudo -E bash -ex /tmp/nodeinstall && \
+sudo apt-get install -y nodejs 
 
 ADD new_postinstall.sh /postinstall.sh
 RUN /postinstall.sh
