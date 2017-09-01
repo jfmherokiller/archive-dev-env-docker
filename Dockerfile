@@ -26,7 +26,7 @@ RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
 #update ssh port
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config
 #install node
-ADD install_node.sh /tmp/installnode.sh
-RUN /tmp/installnode.sh
+RUN sh -c 'curl -sL https://deb.nodesource.com/setup_6.x | bash - ' && \
+apt-get install -y nodejs
 ADD new_postinstall.sh /tmp/postinstall.sh
 RUN /tmp/postinstall.sh
