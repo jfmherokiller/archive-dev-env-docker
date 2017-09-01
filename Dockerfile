@@ -28,5 +28,9 @@ RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config
 #install node
 RUN sh -c 'curl -sL https://deb.nodesource.com/setup_6.x | bash - ' && \
 apt-get install -y nodejs
+
+ADD add_service_users.sh /tmp/users.sh
+RUN /tmp/users.sh
+
 ADD new_postinstall.sh /tmp/postinstall.sh
 RUN /tmp/postinstall.sh

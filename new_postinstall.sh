@@ -9,14 +9,6 @@ echo Post VM installing...
 
 cd $WORKDIR
 
-# Add service users
-adduser tracker --disabled-login --gecos "" || :
-echo -e "tracker\ntracker" | passwd tracker
-
-adduser rsync --disabled-login --gecos "" || :
-echo -e "rsync\nrsync" | passwd rsync
-
-adduser --system www-data --group --disabled-password --disabled-login --no-create-home || :
 
 #sed --in-place -r "s/BLANK_TIME=[0-9]+/BLANK_TIME=0/" /etc/kbd/config
 
