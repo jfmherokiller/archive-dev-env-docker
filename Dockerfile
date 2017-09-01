@@ -2,7 +2,7 @@ FROM ubuntu:12.04
 #ssh,rsync,tracker ports
 EXPOSE 9022 8001 9873 9080
 ENTRYPOINT /sbin/init
-RUN apt-get -y update && apt-get -y install \
+RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
 	openssh-server \
 	build-essential \
 	wget \
