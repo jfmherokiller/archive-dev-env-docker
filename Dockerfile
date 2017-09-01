@@ -51,19 +51,19 @@ Tracker web interface: http://localhost:9080/global-admin/ \n\
 Ports: SSH=9022, Rsync=9873' > /etc/issue && \
 # Allow redis to take over the memory
 sysctl vm.overcommit_memory=1 || \ 
-echo vm.overcommit_memory=1 >> /etc/sysctl.conf
+echo vm.overcommit_memory=1 >> /etc/sysctl.conf && \
 
 # Install redis
-RUN wget http://download.redis.io/redis-stable.tar.gz --continue && \
+wget http://download.redis.io/redis-stable.tar.gz --continue && \
 tar xvzf redis-stable.tar.gz && \
 cd /tmp/redis-stable && \
 make && \
 make install && \
 cd /tmp/redis-stable/utils && \
-echo -e "\n\n\n\n/usr/local/bin/redis-server\n" | ./install_server.sh
+echo -e "\n\n\n\n/usr/local/bin/redis-server\n" | ./install_server.sh && \
 
 # Make redis run not as root
-RUN chown -R www-data:www-data /var/lib/redis/6379/ && \
+chown -R www-data:www-data /var/lib/redis/6379/ && \
 chown -R www-data:www-data /var/log/redis_6379.log && \
 sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/6379.conf
 
