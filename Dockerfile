@@ -24,5 +24,9 @@ RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
 	acpid \
     sudo
 
+#update ssh port and npm
+RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
+npm install -g npm
+
 ADD new_postinstall.sh /postinstall.sh
 RUN /postinstall.sh
