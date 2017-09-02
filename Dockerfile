@@ -90,10 +90,8 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 /bin/bash -l -c "gem install passenger" && \
 /bin/bash -l -c "passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/" && \
 
-
-
 # Set up the nginx config
-RUN sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
+sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
 # Set up the upstart file for nginx
