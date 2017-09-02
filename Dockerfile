@@ -32,22 +32,13 @@ ADD . /tmp
 #update ssh port
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
-
-
 #add users
-adduser tracker --disabled-login --gecos "" || \
-echo -e "tracker\ntracker" | passwd tracker || \
-usermod -a -G tracker tracker || \
-usermod -a -G sudo tracker || \
-adduser rsync --disabled-login --gecos "" || \
-echo -e "rsync\nrsync" | passwd rsync || \
-usermod -a -G rsync rsync || \
-usermod -a -G sudo rsync  || \
-
-adduser --system www-data --group --disabled-password --disabled-login --no-create-home || \
+useradd -Ums /bin/bash tracker && \
+useradd -Ums /bin/bash rsync
+#adduser --system www-data --group --disabled-password --disabled-login --no-create-home
 
 # Install dev libraries
-cd /opt/ && \ 
+RUN cd /opt/ && \ 
 pip install -e "git+https://github.com/ArchiveTeam/seesaw-kit.git#egg=seesaw" && \
 
 # Write info messages
@@ -57,9 +48,10 @@ Tracker web interface: http://localhost:9080/global-admin/ \n\
 Ports: SSH=9022, Rsync=9873' > /etc/issue && \
 # Allow redis to take over the memory
 sysctl vm.overcommit_memory=1 || \ 
-echo vm.overcommit_memory=1 >> /etc/sysctl.conf && \
+echo vm.overcommit_memory=1 >> /etc/sysctl.conf
+
 # Install redis
-cd /tmp/ && \
+RUN cd /tmp/ && \
 wget http://download.redis.io/redis-stable.tar.gz --continue && \
 tar xvzf redis-stable.tar.gz && \
 cd /tmp/redis-stable && \
@@ -96,22 +88,26 @@ sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
 
 # Setup the tracker
-RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/
-RUN /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
+RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/ && \
+/bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle outdated || :" && \
-/bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile"
-RUN bash -l -c "/tmp/setup_tracker.sh"
+/bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile" && \
+/bin/bash -l -c "/tmp/setup_tracker.sh"
 # upstart file for tracker websocket
 
 
 
 USER rsync:rsync
-RUN /tmp/setup_rsync.sh
+RUN /bin/bash -l -c "/tmp/setup_rsync.sh"
 USER root:root
+#move rsync default file into place
+RUN mv /tmp/default_rsync /etc/default/rsync && \
+#move rsyncd file into place
+mv /tmp/rsyncd.conf /etc/rsyncd.conf && \
 # Set up the upstart file for nginx
-RUN mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf
+mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf && \
 # Rotate the nginx logs
-RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
-mv /tmp/nodejs_tracker.cnf /etc/init/nodejs-tracker.conf && \
+mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
+mv /tmp/nodejs-tracker.cnf /etc/init/nodejs-tracker.conf && \
 apt-get clean && /bin/bash -l -c "rm /tmp/* --force --recursive || :" && \
 echo "Done"

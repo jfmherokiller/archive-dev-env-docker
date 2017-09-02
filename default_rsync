@@ -1,0 +1,3 @@
+RSYNC_ENABLE=true
+RSYNC_OPTS='--port 9873'
+RSYNC_NICE=''
