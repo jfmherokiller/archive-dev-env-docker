@@ -3,16 +3,7 @@
 
 
 
-WORKDIR=/tmp/
 
-echo Post VM installing...
-
-cd $WORKDIR
-
-
-
-
-cd $WORKDIR
 cat <<'EOM' >/home/tracker/universal-tracker/config/redis.json
 {
   "development": {
@@ -32,7 +23,7 @@ cat <<'EOM' >/home/tracker/universal-tracker/config/redis.json
   }
 }
 EOM
-chown tracker:tracker /home/tracker/universal-tracker/config/redis.json
+
 
 # Fix up tracker
 cat <<'EOM' >>/home/tracker/universal-tracker/config.ru
@@ -46,10 +37,10 @@ if defined?(PhusionPassenger)
   end
 end
 EOM
-chown tracker:tracker /home/tracker/universal-tracker/config.ru
 
 # Set up tracker websocket
-sudo cp -R /home/tracker/universal-tracker/broadcaster /home/tracker/.
+cp -R /home/tracker/universal-tracker/broadcaster /home/tracker/.
+cd /home/tracker/universal-tracker/broadcaster
 cat <<'EOM' >/home/tracker/broadcaster/server.js
 var fs = require('fs');
 //var env = JSON.parse(fs.readFileSync('/home/dotcloud/environment.json'));
@@ -160,64 +151,13 @@ if (env['redis_password']) {
 }
 redis.subscribe(trackerConfig['redis_pubsub_channel']);
 EOM
-chown tracker:tracker /home/tracker/broadcaster/server.js
 
-sudo -i -u tracker npm install socket.io --registry http://registry.npmjs.org/
-sudo -i -u tracker npm install redis --registry http://registry.npmjs.org/
+npm install socket.io --registry http://registry.npmjs.org/
+npm install redis --registry http://registry.npmjs.org/
 
-# upstart file for tracker websocket
-cat <<'EOM' >/etc/init/nodejs-tracker.conf
-description "tracker nodejs daemon"
 
-start on runlevel [2]
-stop on runlevel [016]
 
-setuid tracker
-setgid tracker
 
-exec node /home/tracker/broadcaster/server.js
-EOM
 
-# Set up rsync
-# Create a place to store rsync uploads
-mkdir -p /home/rsync/uploads/
-chown rsync:rsync /home/rsync/uploads
-cat <<'EOM' >/etc/default/rsync
-RSYNC_ENABLE=true
-RSYNC_OPTS='--port 9873'
-RSYNC_NICE=''
-EOM
-
-cat <<'EOM' >/etc/rsyncd.conf
-[archiveteam]
-path = /home/rsync/uploads/
-use chroot = yes
-max connections = 100
-lock file = /var/lock/rsyncd
-read only = no
-list = yes
-uid = rsync
-gid = rsync
-strict modes = yes
-ignore errors = no
-ignore nonreadable = yes
-transfer logging = no
-timeout = 600
-refuse options = checksum dry-run
-dont compress = *.gz *.tgz *.zip *.z *.rpm *.deb *.iso *.bz2 *.tbz
-EOM
-
-# Prefetch megawarc factory
-if [ ! -d "/home/rsync/archiveteam-megawarc-factory/" ]; then
-	sudo -u rsync git clone https://github.com/ArchiveTeam/archiveteam-megawarc-factory.git /home/rsync/archiveteam-megawarc-factory/
-fi
-if [ ! -d "/home/rsync/archiveteam-megawarc-factory/megawarc/" ]; then
-	sudo -u rsync git clone https://github.com/alard/megawarc.git /home/rsync/archiveteam-megawarc-factory/megawarc/
-fi
-
-apt-get clean
-rm /tmp/* --force --recursive || :
-
-echo Done
 
 
