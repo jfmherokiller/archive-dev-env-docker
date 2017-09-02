@@ -28,7 +28,7 @@ RUN bash /tmp/nodeme && apt-get -y install \
 
 #set workdir to tmp
 #WORKDIR /tmp
-
+ADD . /tmp
 #update ssh port
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
@@ -71,11 +71,10 @@ echo -e "\n\n\n\n/usr/local/bin/redis-server\n" | ./install_server.sh && \
 # Make redis run not as root
 chown -R www-data:www-data /var/lib/redis/6379/ && \
 chown -R www-data:www-data /var/log/redis_6379.log && \
-sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/6379.conf
-
-ADD redis_6379 /etc/init.d/redis_6379
+sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/6379.conf && \
+mv /tmp/redis_6379 /etc/init.d/redis_6379 && \
 # Stop redis logs from getting really big
-ADD logrotate_redis /etc/logrotate.d/redis
+mv /tmp/logrotate_redis /etc/logrotate.d/redis
 
 USER tracker:tracker
 # Install nginx with passenger
@@ -88,35 +87,30 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && \
 /bin/bash -l -c "gem install rails" && \
 /bin/bash -l -c "gem install passenger" && \
-/bin/bash -l -c "passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/"
+/bin/bash -l -c "passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/" && \
 
 # Rotate the nginx logs
-ADD rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
+mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
 
 # Set up the nginx config
 RUN sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
 # Set up the upstart file for nginx
-ADD ngnix-tracker /etc/init/nginx-tracker.conf
-
+RUN mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf
 # Setup the tracker
 RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/
 RUN /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle outdated || :" && \
 /bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile"
-
-ADD setup_tracker.sh /tmp/setup_tracker.sh
 RUN bash -l -c "/tmp/setup_tracker.sh"
 # upstart file for tracker websocket
-COPY nodejs_tracker.cnf /etc/init/nodejs-tracker.conf
+
 
 
 USER rsync:rsync
-ADD setup_rsync.sh /tmp/setup_rsync.sh
 RUN /tmp/setup_rsync.sh
 USER root:root
-
-
-RUN apt-get clean && /bin/bash -l -c "rm /tmp/* --force --recursive || :" && \
+RUN mv /tmp/nodejs_tracker.cnf /etc/init/nodejs-tracker.conf && \
+apt-get clean && /bin/bash -l -c "rm /tmp/* --force --recursive || :" && \
 echo "Done"
