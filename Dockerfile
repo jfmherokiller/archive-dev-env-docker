@@ -36,8 +36,13 @@ apt-get install -y nodejs && \
 #add users
 adduser tracker --disabled-login --gecos "" || \
 echo -e "tracker\ntracker" | passwd tracker || \
+usermod -a -G tracker tracker || \
+usermod -a -G sudo tracker || \
 adduser rsync --disabled-login --gecos "" || \
 echo -e "rsync\nrsync" | passwd rsync || \
+usermod -a -G rsync rsync || \
+usermod -a -G sudo rsync  || \
+
 adduser --system www-data --group --disabled-password --disabled-login --no-create-home || \
 
 # Install dev libraries
@@ -71,5 +76,10 @@ ADD redis_6379 /etc/init.d/redis_6379
 # Stop redis logs from getting really big
 ADD logrotate_redis /etc/logrotate.d/redis
 
+USER tracker:tracker
+#install ruby
+RUN curl -L get.rvm.io -o rvm_stable && \
+bash -ex /tmp/rvm_stable --ignore-dotfiles --autolibs=0 --ruby
+USER root:root 
 ADD new_postinstall.sh /tmp/postinstall.sh
 RUN /tmp/postinstall.sh

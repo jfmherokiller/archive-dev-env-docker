@@ -10,8 +10,7 @@ echo Post VM installing...
 cd $WORKDIR
 
 # Install nginx with passenger
-curl -L get.rvm.io -o rvm_stable
-sudo -i -u tracker bash -ex /tmp/rvm_stable --ignore-dotfiles --autolibs=0 --ruby=2.0.0
+
 echo "source /home/tracker/.rvm/scripts/rvm" | sudo -u tracker tee --append /home/tracker/.bashrc /home/tracker/.profile
 sudo -i -u tracker rvm requirements
 sudo -i -u tracker rvm install 2.0
