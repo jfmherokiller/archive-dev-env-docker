@@ -83,7 +83,7 @@ RUN curl -L get.rvm.io -o /tmp/rvm_stable && \
 bash -ex /tmp/rvm_stable --ignore-dotfiles --autolibs=0 --ruby
 RUN echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashrc /home/tracker/.profile && \
 /bin/bash -l -c "rvm requirements" && \
-/bin/bash -l -c "rvm install 2.0" && \
+/bin/bash -l -c "rvm install 2.0.0" && \
 /bin/bash -l -c "rvm rubygems current" && \
 /bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && \
 /bin/bash -l -c "gem install rails" && \
@@ -94,7 +94,14 @@ ADD rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
 # Set up the nginx config
 RUN sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
+# Set up the upstart file for nginx
+ADD ngnix-tracker /etc/init/nginx-tracker.conf
+# Setup the tracker
+RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/
+RUN /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
+/bin/bash -l -c "cd /home/tracker/universal-tracker && bundle outdated || :" && \
+/bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile"
 
-USER root:root 
+USER root:root
 ADD new_postinstall.sh /tmp/postinstall.sh
-RUN /tmp/postinstall.sh
+RUN bash -l -c "/tmp/postinstall.sh"

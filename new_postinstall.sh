@@ -10,26 +10,8 @@ echo Post VM installing...
 cd $WORKDIR
 
 
-# Set up the upstart file for nginx
-cat <<EOM >/etc/init/nginx-tracker.conf
-description "nginx http daemon"
 
-start on runlevel [2]
-stop on runlevel [016]
 
-setuid tracker
-setgid tracker
-
-console output
-
-exec /home/tracker/nginx/sbin/nginx -c /home/tracker/nginx/conf/nginx.conf -g "daemon off;"
-EOM
-
-# Setup the tracker
-if [ ! -d "/home/tracker/universal-tracker/" ]; then
-	sudo -u tracker git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/
-fi
-sudo -i -u tracker bundle install --gemfile /home/tracker/universal-tracker/Gemfile
 cd $WORKDIR
 cat <<'EOM' >/home/tracker/universal-tracker/config/redis.json
 {

@@ -1,0 +1,11 @@
+description "nginx http daemon"
+
+start on runlevel [2]
+stop on runlevel [016]
+
+setuid tracker
+setgid tracker
+
+console output
+
+exec /home/tracker/nginx/sbin/nginx -c /home/tracker/nginx/conf/nginx.conf -g "daemon off;"
