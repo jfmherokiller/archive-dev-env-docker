@@ -76,6 +76,7 @@ mv /tmp/redis_6379 /etc/init.d/redis_6379 && \
 # Stop redis logs from getting really big
 mv /tmp/logrotate_redis /etc/logrotate.d/redis
 
+
 USER tracker:tracker
 # Install nginx with passenger
 RUN curl -L get.rvm.io -o /tmp/rvm_stable && \
@@ -89,8 +90,7 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 /bin/bash -l -c "gem install passenger" && \
 /bin/bash -l -c "passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/" && \
 
-# Rotate the nginx logs
-mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
+
 
 # Set up the nginx config
 RUN sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
@@ -111,6 +111,8 @@ RUN bash -l -c "/tmp/setup_tracker.sh"
 USER rsync:rsync
 RUN /tmp/setup_rsync.sh
 USER root:root
-RUN mv /tmp/nodejs_tracker.cnf /etc/init/nodejs-tracker.conf && \
+# Rotate the nginx logs
+RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
+mv /tmp/nodejs_tracker.cnf /etc/init/nodejs-tracker.conf && \
 apt-get clean && /bin/bash -l -c "rm /tmp/* --force --recursive || :" && \
 echo "Done"
