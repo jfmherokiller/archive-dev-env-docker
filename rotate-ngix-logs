@@ -1,0 +1,12 @@
+/home/tracker/nginx/logs/error.log
+/home/tracker/nginx/logs/access.log {
+    create rw tracker tracker
+    daily
+    rotate 10
+    copytruncate
+    delaycompress
+    compress
+    notifempty
+    missingok
+    size 10M
+}

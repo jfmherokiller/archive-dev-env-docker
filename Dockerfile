@@ -2,7 +2,9 @@ FROM ubuntu:12.04
 #ssh,rsync,tracker ports
 EXPOSE 9022 8001 9873 9080
 ENTRYPOINT /sbin/init
-RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
+#install node and other packages
+ADD https://deb.nodesource.com/setup_6.x /tmp/nodeme
+RUN bash /tmp/nodeme && apt-get -y install \
 	openssh-server \
 	build-essential \
 	wget \
@@ -21,7 +23,8 @@ RUN apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install \
 	libyaml-0-2 \
 	libcurl4-openssl-dev \
 	acpid \
-    sudo
+    sudo \
+    nodejs
 
 #set workdir to tmp
 WORKDIR /tmp
@@ -29,9 +32,7 @@ WORKDIR /tmp
 #update ssh port
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
-#install node
-sh -c 'curl -sL https://deb.nodesource.com/setup_6.x | bash - ' && \
-apt-get install -y nodejs && \
+
 
 #add users
 adduser tracker --disabled-login --gecos "" || \
@@ -77,9 +78,23 @@ ADD redis_6379 /etc/init.d/redis_6379
 ADD logrotate_redis /etc/logrotate.d/redis
 
 USER tracker:tracker
-#install ruby
-RUN curl -L get.rvm.io -o rvm_stable && \
+# Install nginx with passenger
+RUN curl -L get.rvm.io -o /tmp/rvm_stable && \
 bash -ex /tmp/rvm_stable --ignore-dotfiles --autolibs=0 --ruby
+RUN echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashrc /home/tracker/.profile && \
+/bin/bash -l -c "rvm requirements" && \
+/bin/bash -l -c "rvm install 2.0" && \
+/bin/bash -l -c "rvm rubygems current" && \
+/bin/bash -l -c "gem install bundler --no-ri --no-rdoc" && \
+/bin/bash -l -c "gem install rails" && \
+/bin/bash -l -c "gem install passenger" && \
+/bin/bash -l -c "passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/"
+# Rotate the nginx logs
+ADD rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
+# Set up the nginx config
+RUN sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
+sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
+
 USER root:root 
 ADD new_postinstall.sh /tmp/postinstall.sh
 RUN /tmp/postinstall.sh

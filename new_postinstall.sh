@@ -9,36 +9,6 @@ echo Post VM installing...
 
 cd $WORKDIR
 
-# Install nginx with passenger
-
-echo "source /home/tracker/.rvm/scripts/rvm" | sudo -u tracker tee --append /home/tracker/.bashrc /home/tracker/.profile
-sudo -i -u tracker rvm requirements
-sudo -i -u tracker rvm install 2.0
-sudo -i -u tracker rvm rubygems current
-sudo -i -u tracker gem install rails
-sudo -i -u tracker gem install bundle
-sudo -i -u tracker gem install passenger
-sudo -i -u tracker passenger-install-nginx-module --auto --auto-download --prefix /home/tracker/nginx/
-
-# Rotate the nginx logs
-cat <<'EOM' >/etc/logrotate.d/nginx-tracker.conf
-/home/tracker/nginx/logs/error.log
-/home/tracker/nginx/logs/access.log {
-    create rw tracker tracker
-    daily
-    rotate 10
-    copytruncate
-    delaycompress
-    compress
-    notifempty
-    missingok
-    size 10M
-}
-EOM
-
-# Set up the nginx config
-sudo -i -u tracker sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf
-sudo -i -u tracker sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
 # Set up the upstart file for nginx
 cat <<EOM >/etc/init/nginx-tracker.conf
