@@ -94,8 +94,7 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
-# Set up the upstart file for nginx
-RUN mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf
+
 # Setup the tracker
 RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/
 RUN /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
@@ -109,6 +108,8 @@ RUN bash -l -c "/tmp/setup_tracker.sh"
 USER rsync:rsync
 RUN /tmp/setup_rsync.sh
 USER root:root
+# Set up the upstart file for nginx
+RUN mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf
 # Rotate the nginx logs
 RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
 mv /tmp/nodejs_tracker.cnf /etc/init/nodejs-tracker.conf && \
