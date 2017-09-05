@@ -1,10 +1,10 @@
-FROM ubuntu:12.04
+FROM phusion/baseimage:0.9.22
 #ssh,rsync,tracker ports
 EXPOSE 9022 8001 9873 9080
-ENTRYPOINT /sbin/init
+ENTRYPOINT /sbin/my_init
 #install node and other packages
 ADD https://deb.nodesource.com/setup_6.x /tmp/nodeme
-RUN bash /tmp/nodeme && apt-get -y install \
+RUN chmod +x /tmp/nodeme && /tmp/nodeme && apt-get -y install \
 	openssh-server \
 	build-essential \
 	wget \
@@ -24,7 +24,10 @@ RUN bash /tmp/nodeme && apt-get -y install \
 	libcurl4-openssl-dev \
 	acpid \
     sudo \
-    nodejs
+    nodejs \
+    libpcre3 \
+    libpcre3-dev \
+    redis-server
 
 #set workdir to tmp
 #WORKDIR /tmp
@@ -33,8 +36,16 @@ ADD . /tmp
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
 #add users
+useradd -Ums /bin/bash warrior && \
 useradd -Ums /bin/bash tracker && \
-useradd -Ums /bin/bash rsync
+useradd -Ums /bin/bash rsync && \
+echo "tracker ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+echo "warrior ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+echo "rsync ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+
+# Fix dnsmasq bug (see https://github.com/nicolasff/docker-cassandra/issues/8#issuecomment-36922132)
+echo 'user=root' >> /etc/dnsmasq.conf
+
 #adduser --system www-data --group --disabled-password --disabled-login --no-create-home
 
 # Install dev libraries
@@ -50,21 +61,14 @@ Ports: SSH=9022, Rsync=9873' > /etc/issue && \
 sysctl vm.overcommit_memory=1 || \ 
 echo vm.overcommit_memory=1 >> /etc/sysctl.conf
 
-# Install redis
-RUN cd /tmp/ && \
-wget http://download.redis.io/redis-stable.tar.gz --continue && \
-tar xvzf redis-stable.tar.gz && \
-cd /tmp/redis-stable && \
-make && \
-make install && \
-cd /tmp/redis-stable/utils && \
-echo -e "\n\n\n\n/usr/local/bin/redis-server\n" | ./install_server.sh && \
 
 # Make redis run not as root
-chown -R www-data:www-data /var/lib/redis/6379/ && \
-chown -R www-data:www-data /var/log/redis_6379.log && \
-sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/6379.conf && \
-mv /tmp/redis_6379 /etc/init.d/redis_6379 && \
+#chown -R www-data:www-data /var/lib/redis/6379/ && \
+#chown -R www-data:www-data /var/log/redis_6379.log && \
+RUN sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/redis.conf && \
+mkdir /etc/service/redis && \
+mv /tmp/redis_server.sh /etc/service/redis/run && \
+#mv /tmp/redis_6379 /etc/my_init.d/redis_6379 && \
 # Stop redis logs from getting really big
 mv /tmp/logrotate_redis /etc/logrotate.d/redis
 
@@ -96,18 +100,27 @@ RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker
 # upstart file for tracker websocket
 
 
-
+# Set up rsync
 USER rsync:rsync
-RUN /bin/bash -l -c "/tmp/setup_rsync.sh"
+# Create a place to store rsync uploads
+RUN mkdir -p /home/rsync/uploads/ && \
+# Prefetch megawarc factory
+git clone https://github.com/ArchiveTeam/archiveteam-megawarc-factory.git /home/rsync/archiveteam-megawarc-factory/ && \
+git clone https://github.com/alard/megawarc.git /home/rsync/archiveteam-megawarc-factory/megawarc/
 USER root:root
-#move rsync default file into place
-RUN mv /tmp/default_rsync /etc/default/rsync && \
-#move rsyncd file into place
+
+#move rsyncd,rsync runit files into place
+RUN mkdir /etc/service/rsync && \
+mv /tmp/rsync_server.sh /etc/service/rsync/run && \
 mv /tmp/rsyncd.conf /etc/rsyncd.conf && \
-# Set up the upstart file for nginx
-mv /tmp/ngnix-tracker /etc/init/nginx-tracker.conf && \
+# Set up the runit file for nginx
+mkdir /etc/service/nginx && \
+mv /tmp/ngnix-tracker /etc/service/nginx/run && \
 # Rotate the nginx logs
 mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
-mv /tmp/nodejs-tracker.cnf /etc/init/nodejs-tracker.conf && \
-apt-get clean && /bin/bash -l -c "rm /tmp/* --force --recursive || :" && \
+#add nodejs tracker runit
+mkdir /etc/service/nodejs-tracker && \
+mv /tmp/nodejs-tracker.cnf /etc/service/nodejs-tracker/run && \
+# Clean up APT when done.
+apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
 echo "Done"

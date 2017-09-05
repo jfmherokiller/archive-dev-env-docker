@@ -1,9 +1,2 @@
-description "tracker nodejs daemon"
-
-start on runlevel [2]
-stop on runlevel [016]
-
-setuid tracker
-setgid tracker
-
-exec node /home/tracker/broadcaster/server.js
+#!/bin/sh
+exec /sbin/setuser tracker node /home/tracker/broadcaster/server.js
