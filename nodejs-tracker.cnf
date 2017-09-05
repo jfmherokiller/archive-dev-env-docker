@@ -1,2 +1,3 @@
 #!/bin/sh
-exec /sbin/setuser tracker node /home/tracker/broadcaster/server.js
+cd /home/tracker/broadcaster
+exec /sbin/setuser tracker node server.js

@@ -31,7 +31,13 @@ RUN chmod +x /tmp/nodeme && /tmp/nodeme && apt-get -y install \
 
 #set workdir to tmp
 #WORKDIR /tmp
-ADD . /tmp
+
+
+
+
+
+
+
 #update ssh port
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
@@ -65,12 +71,8 @@ echo vm.overcommit_memory=1 >> /etc/sysctl.conf
 # Make redis run not as root
 #chown -R www-data:www-data /var/lib/redis/6379/ && \
 #chown -R www-data:www-data /var/log/redis_6379.log && \
-RUN sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/redis.conf && \
-mkdir /etc/service/redis && \
-mv /tmp/redis_server.sh /etc/service/redis/run && \
-#mv /tmp/redis_6379 /etc/my_init.d/redis_6379 && \
-# Stop redis logs from getting really big
-mv /tmp/logrotate_redis /etc/logrotate.d/redis
+RUN sed -i "s/\(pidfile *\).*/\1\/var\/run\/shm\/redis_6379.pid/" /etc/redis/redis.conf
+
 
 
 USER tracker:tracker
@@ -90,15 +92,15 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
-
 # Setup the tracker
+ADD setup_tracker.sh /tmp
 RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/ && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle outdated || :" && \
-/bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile" && \
-/bin/bash -l -c "/tmp/setup_tracker.sh"
-# upstart file for tracker websocket
+/bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile"
 
+#setup nodejs tracker
+RUN /bin/bash -l -c "/tmp/setup_tracker.sh"
 
 # Set up rsync
 USER rsync:rsync
@@ -108,18 +110,29 @@ RUN mkdir -p /home/rsync/uploads/ && \
 git clone https://github.com/ArchiveTeam/archiveteam-megawarc-factory.git /home/rsync/archiveteam-megawarc-factory/ && \
 git clone https://github.com/alard/megawarc.git /home/rsync/archiveteam-megawarc-factory/megawarc/
 USER root:root
-
+#move redis serverfiles into place
+ADD redis_server.sh /tmp
+ADD logrotate_redis /tmp
+RUN mkdir /etc/service/redis && \
+mv /tmp/redis_server.sh /etc/service/redis/run && \
+# Stop redis logs from getting really big
+mv /tmp/logrotate_redis /etc/logrotate.d/redis
 #move rsyncd,rsync runit files into place
+ADD rsync_server.sh /tmp
+ADD rsyncd.conf /tmp
 RUN mkdir /etc/service/rsync && \
 mv /tmp/rsync_server.sh /etc/service/rsync/run && \
-mv /tmp/rsyncd.conf /etc/rsyncd.conf && \
+mv /tmp/rsyncd.conf /etc/rsyncd.conf
 # Set up the runit file for nginx
-mkdir /etc/service/nginx && \
-mv /tmp/ngnix-tracker /etc/service/nginx/run && \
+ADD ngnix-tracker /tmp
+RUN mkdir /etc/service/nginx && \
+mv /tmp/ngnix-tracker /etc/service/nginx/run
 # Rotate the nginx logs
-mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf && \
+ADD rotate-ngix-logs /tmp
+RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
 #add nodejs tracker runit
-mkdir /etc/service/nodejs-tracker && \
+ADD nodejs-tracker.cnf /tmp
+RUN mkdir /etc/service/nodejs-tracker && \
 mv /tmp/nodejs-tracker.cnf /etc/service/nodejs-tracker/run && \
 # Clean up APT when done.
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \

@@ -151,9 +151,8 @@ if (env['redis_password']) {
 }
 redis.subscribe(trackerConfig['redis_pubsub_channel']);
 EOM
-
-npm install socket.io --registry http://registry.npmjs.org/
-npm install redis --registry http://registry.npmjs.org/
+mkdir node_modules
+npm install
 
 
 
