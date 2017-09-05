@@ -92,14 +92,14 @@ echo "source /home/tracker/.rvm/scripts/rvm" | tee --append /home/tracker/.bashr
 sed -i "s/\( root *\).*/\1\/home\/tracker\/universal-tracker\/public;passenger_enabled on;/" /home/tracker/nginx/conf/nginx.conf && \
 sed -i "s/\( listen *\).*/\19080;/" /home/tracker/nginx/conf/nginx.conf
 
-# Setup the tracker
-ADD setup_tracker.sh /tmp
+
 RUN git clone https://github.com/ArchiveTeam/universal-tracker.git /home/tracker/universal-tracker/ && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle update cucumber" && \
 /bin/bash -l -c "cd /home/tracker/universal-tracker && bundle outdated || :" && \
 /bin/bash -l -c "bundle install --gemfile /home/tracker/universal-tracker/Gemfile"
 
 #setup nodejs tracker
+ADD setup_tracker.sh /tmp
 RUN /bin/bash -l -c "/tmp/setup_tracker.sh"
 
 # Set up rsync

@@ -152,7 +152,9 @@ if (env['redis_password']) {
 redis.subscribe(trackerConfig['redis_pubsub_channel']);
 EOM
 mkdir node_modules
+npm install socket.io@2.0.3 --save
 npm install
+cat package.json
 
 
 
