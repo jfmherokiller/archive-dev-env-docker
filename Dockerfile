@@ -37,9 +37,10 @@ RUN chmod +x /tmp/nodeme && /tmp/nodeme && apt-get -y install \
 
 
 
-
+#enable ssh server
+RUN rm -f /etc/service/sshd/down && \
 #update ssh port
-RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
+sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
 #add users
 useradd -Ums /bin/bash dev && \
@@ -145,9 +146,9 @@ ADD rotate-ngnix-logs /tmp
 RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
 
 #add nodejs tracker runit
-ADD nodejs-tracker.cnf /tmp
+ADD nodejs_server.sh /tmp
 RUN mkdir /etc/service/nodejs-tracker && \
-mv /tmp/nodejs-tracker.cnf /etc/service/nodejs-tracker/run && \
+mv /tmp/nodejs_server.sh /etc/service/nodejs-tracker/run && \
 
 # Clean up APT when done.
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
