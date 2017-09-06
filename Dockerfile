@@ -139,7 +139,7 @@ mv /tmp/rsyncd.conf /etc/rsyncd.conf
 # Set up the runit file for nginx
 ADD ngnix_server.sh /tmp
 RUN mkdir /etc/service/nginx && \
-mv /tmp/ngnix-tracker /etc/service/nginx/run
+mv /tmp/ngnix_server.sh /etc/service/nginx/run
 
 # Rotate the nginx logs
 ADD rotate-ngnix-logs /tmp
