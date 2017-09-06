@@ -42,11 +42,11 @@ RUN chmod +x /tmp/nodeme && /tmp/nodeme && apt-get -y install \
 RUN sed -i 's/Port 22/Port 9022/g' /etc/ssh/sshd_config && \
 
 #add users
-useradd -Ums /bin/bash warrior && \
+useradd -Ums /bin/bash dev && \
 useradd -Ums /bin/bash tracker && \
 useradd -Ums /bin/bash rsync && \
+echo "dev ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
 echo "tracker ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
-echo "warrior ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
 echo "rsync ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
 
 # Fix dnsmasq bug (see https://github.com/nicolasff/docker-cassandra/issues/8#issuecomment-36922132)
@@ -136,12 +136,12 @@ mv /tmp/rsync_server.sh /etc/service/rsync/run && \
 mv /tmp/rsyncd.conf /etc/rsyncd.conf
 
 # Set up the runit file for nginx
-ADD ngnix-tracker /tmp
+ADD ngnix_server.sh /tmp
 RUN mkdir /etc/service/nginx && \
 mv /tmp/ngnix-tracker /etc/service/nginx/run
 
 # Rotate the nginx logs
-ADD rotate-ngix-logs /tmp
+ADD rotate-ngnix-logs /tmp
 RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
 
 #add nodejs tracker runit
