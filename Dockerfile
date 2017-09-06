@@ -143,7 +143,7 @@ mv /tmp/ngnix_server.sh /etc/service/nginx/run
 
 # Rotate the nginx logs
 ADD rotate-ngnix-logs /tmp
-RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
+RUN mv /tmp/rotate-ngnix-logs /etc/logrotate.d/nginx-tracker.conf
 
 #add nodejs tracker runit
 ADD nodejs_server.sh /tmp
