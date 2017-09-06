@@ -40,8 +40,9 @@ EOM
 
 # Set up tracker websocket
 cp -R /home/tracker/universal-tracker/broadcaster /home/tracker/.
-cd /home/tracker/universal-tracker/broadcaster
-cat <<'EOM' >/home/tracker/broadcaster/server.js
+cd /home/tracker/broadcaster
+
+cat <<'EOM' > /home/tracker/broadcaster/server.js
 var fs = require('fs');
 //var env = JSON.parse(fs.readFileSync('/home/dotcloud/environment.json'));
 
@@ -152,9 +153,9 @@ if (env['redis_password']) {
 redis.subscribe(trackerConfig['redis_pubsub_channel']);
 EOM
 mkdir node_modules
-npm install socket.io@2.0.3 --save
 npm install
-cat package.json
+ls node_modules
+cat server.js
 
 
 
