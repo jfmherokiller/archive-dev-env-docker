@@ -58,9 +58,7 @@ var trackerConfig = env['tracker_config'];
 
 var app = require('http').createServer(httpHandler),
     io = require('socket.io').listen(app),
-    redis = require('redis').createClient(Number(env['redis_port'] || 6379),
-                                          env['redis_host'] || '127.0.0.1',
-                                          Number(env['redis_db'] || 0)),
+    redis = require('redis').createClient("redis://127.0.0.1:6379/0"),
     numberOfClients = 0,
     recentMessages = {};
 

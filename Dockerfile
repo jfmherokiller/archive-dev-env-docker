@@ -1,6 +1,6 @@
 FROM phusion/baseimage:0.9.22
 #ssh,rsync,tracker ports
-EXPOSE 9022 8001 9873 9080
+EXPOSE 9022 8001 9873 9080 9081
 ENTRYPOINT /sbin/my_init
 #install node and other packages
 ADD https://deb.nodesource.com/setup_6.x /tmp/nodeme
@@ -104,36 +104,51 @@ RUN /bin/bash -l -c "/tmp/setup_tracker.sh"
 
 # Set up rsync
 USER rsync:rsync
+
 # Create a place to store rsync uploads
 RUN mkdir -p /home/rsync/uploads/ && \
+
 # Prefetch megawarc factory
 git clone https://github.com/ArchiveTeam/archiveteam-megawarc-factory.git /home/rsync/archiveteam-megawarc-factory/ && \
 git clone https://github.com/alard/megawarc.git /home/rsync/archiveteam-megawarc-factory/megawarc/
 USER root:root
-#move redis serverfiles into place
+
+#move redis serverfiles into place and fix config
 ADD redis_server.sh /tmp
 ADD logrotate_redis /tmp
 RUN mkdir /etc/service/redis && \
 mv /tmp/redis_server.sh /etc/service/redis/run && \
+sed -i '/daemonize yes/c\daemonize no' /etc/redis/redis.conf && \
+# Make redis run not as root
+#chown -R www-data:www-data /var/lib/redis/6379/ && \
+chown -R www-data:www-data /var/log/redis/ && \
+
 # Stop redis logs from getting really big
-mv /tmp/logrotate_redis /etc/logrotate.d/redis
+mv /tmp/logrotate_redis /etc/logrotate.d/redis && \
+#fix redis config perms
+chmod 777 /etc/redis/redis.conf
+
 #move rsyncd,rsync runit files into place
 ADD rsync_server.sh /tmp
 ADD rsyncd.conf /tmp
 RUN mkdir /etc/service/rsync && \
 mv /tmp/rsync_server.sh /etc/service/rsync/run && \
 mv /tmp/rsyncd.conf /etc/rsyncd.conf
+
 # Set up the runit file for nginx
 ADD ngnix-tracker /tmp
 RUN mkdir /etc/service/nginx && \
 mv /tmp/ngnix-tracker /etc/service/nginx/run
+
 # Rotate the nginx logs
 ADD rotate-ngix-logs /tmp
 RUN mv /tmp/rotate-ngix-logs /etc/logrotate.d/nginx-tracker.conf
+
 #add nodejs tracker runit
 ADD nodejs-tracker.cnf /tmp
 RUN mkdir /etc/service/nodejs-tracker && \
 mv /tmp/nodejs-tracker.cnf /etc/service/nodejs-tracker/run && \
+
 # Clean up APT when done.
 apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
 echo "Done"
